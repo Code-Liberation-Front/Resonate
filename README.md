@@ -7,9 +7,10 @@ channel, and build personal playlists that follow you across servers.
 
 - **Search** — `/search` looks up songs on YouTube Music and lets you pick one
   from a dropdown to queue.
-- **Play** — `/play` takes a song name, artist, or a YouTube / YouTube Music
-  URL and streams it into your voice channel, with a full queue system
-  (skip, pause, resume, shuffle, remove, volume, now-playing).
+- **Play** — `/play` shows the top 10 YouTube Music matches for your query and
+  streams the one you pick into your voice channel (URLs skip the picker and
+  play directly), with a full queue system (skip, pause, resume, shuffle,
+  remove, volume, now-playing).
 - **Playlists** — `/playlist` commands let every user create up to 25 personal
   playlists (100 tracks each), stored in SQLite, playable in any server the
   bot is in.
@@ -18,7 +19,7 @@ channel, and build personal playlists that follow you across servers.
 
 | Command | Description |
 | --- | --- |
-| `/play <query>` | Play or queue a song (name, artist, or URL) |
+| `/play <query>` | Show the top 10 matches and pick one to play (URLs play directly) |
 | `/search <query>` | Search YouTube Music and pick a result to queue |
 | `/queue` | Show what's playing and what's up next |
 | `/nowplaying` | Show the current song |
