@@ -1,18 +1,14 @@
-"""Playback commands: search, play, and queue control."""
-
-import logging
+"""Playback commands: play and queue control."""
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from ..music import extractor, resolver, ytmusic
+from ..music import extractor, resolver
 from ..music.player import MusicPlayer
 from ..music.track import Track
 from ..ui import NowPlayingView, TrackPickerView, results_embed
 from ..utils import EMBED_COLOR, format_duration, respond, trim
-
-log = logging.getLogger(__name__)
 
 SEARCH_RESULTS = 10
 
@@ -138,22 +134,6 @@ class Music(commands.Cog):
             await self._queue_track(interaction, tracks[0])
         else:
             await self._send_picker(interaction, query, tracks)
-
-    @app_commands.command(description="Search YouTube Music and pick a song to queue.")
-    @app_commands.describe(query="What to search for")
-    @app_commands.guild_only()
-    async def search(self, interaction: discord.Interaction, query: str) -> None:
-        await interaction.response.defer()
-        try:
-            tracks = await ytmusic.search_songs(query, limit=SEARCH_RESULTS)
-        except Exception:
-            log.exception("YouTube Music search failed")
-            await respond(interaction, "Search failed — please try again in a moment.")
-            return
-        if not tracks:
-            await respond(interaction, f"No results for **{trim(query, 100)}**.")
-            return
-        await self._send_picker(interaction, query, tracks)
 
     @app_commands.command(description="Show what's playing and what's up next.")
     @app_commands.guild_only()

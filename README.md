@@ -9,12 +9,10 @@ channel, and build personal playlists that follow you across servers.
 
 ## Features
 
-- **Search** — `/search` looks up songs on YouTube Music; click a numbered
-  button to queue the one you want.
-- **Play** — `/play` shows the top 10 YouTube Music matches for your query and
-  streams the one you click into your voice channel (URLs skip the picker and
-  play directly), with a full queue system (skip, pause, resume, shuffle,
-  remove, volume, now-playing).
+- **Play** — `/play` searches YouTube Music and shows the top 10 matches as
+  numbered buttons; click one to stream it into your voice channel (URLs skip
+  the picker and play directly), with a full queue system (skip, pause,
+  resume, shuffle, remove, volume, now-playing).
 - **Playlists** — `/playlist` commands let every user create up to 25 personal
   playlists (100 tracks each), stored in SQLite, playable in any server the
   bot is in. Every now-playing message has an **➕ Add to playlist** button to
@@ -25,7 +23,6 @@ channel, and build personal playlists that follow you across servers.
 | Command | Description |
 | --- | --- |
 | `/play <query>` | Show the top 10 matches and pick one to play (URLs play directly) |
-| `/search <query>` | Search YouTube Music and pick a result to queue |
 | `/queue` | Show what's playing and what's up next |
 | `/nowplaying` | Show the current song, with a quick add-to-playlist button |
 | `/skip` | Skip the current song |
@@ -93,8 +90,8 @@ docker run -e DISCORD_TOKEN=your-token -v resonate-data:/data resonate
 
 ## How it works
 
-- [`ytmusicapi`](https://github.com/sigma67/ytmusicapi) powers `/search` and
-  free-text `/play` queries against YouTube Music (no YouTube account needed).
+- [`ytmusicapi`](https://github.com/sigma67/ytmusicapi) powers free-text
+  `/play` queries against YouTube Music (no YouTube account needed).
 - [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) resolves a fresh audio stream
   URL right before each track plays (stream URLs expire, so they're never
   cached), and FFmpeg decodes it for Discord voice.
