@@ -3,12 +3,16 @@
 import dataclasses
 import random
 
+import aiosqlite
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from ..music import extractor, resolver
+from ..music.track import Track
+from ..ui import TrackPickerView, results_embed
 from ..utils import EMBED_COLOR, format_duration, respond, trim
+from .music import SEARCH_RESULTS
 
 MAX_PLAYLISTS_PER_USER = 25
 MAX_TRACKS_PER_PLAYLIST = 100
@@ -151,15 +155,37 @@ class Playlists(commands.Cog):
             return
         await interaction.response.defer()
         try:
-            track = await resolver.resolve_track(query)
+            tracks = await resolver.search_or_resolve(query, limit=SEARCH_RESULTS)
         except extractor.ExtractionError:
             await respond(interaction, f"Couldn't find anything for **{trim(query, 100)}**.")
             return
-        position = await self.bot.db.add_track(playlist_id, track)
-        await respond(
-            interaction,
-            f"➕ Added **[{track.title}]({track.music_url})** — {track.artists} "
+        if len(tracks) == 1:
+            await respond(
+                interaction, embed=await self._added_embed(playlist_id, name, tracks[0])
+            )
+            return
+
+        async def on_pick(_: discord.Interaction, track: Track) -> discord.Embed:
+            return await self._added_embed(playlist_id, name, track)
+
+        view = TrackPickerView(interaction.user.id, tracks, on_pick)
+        view.message = await interaction.followup.send(
+            embed=results_embed(query, tracks), view=view
+        )
+
+    async def _added_embed(
+        self, playlist_id: int, name: str, track: Track
+    ) -> discord.Embed:
+        try:
+            position = await self.bot.db.add_track(playlist_id, track)
+        except aiosqlite.IntegrityError:
+            return discord.Embed(
+                description=f"**{name}** no longer exists.", color=EMBED_COLOR
+            )
+        return discord.Embed(
+            description=f"➕ Added **[{track.title}]({track.music_url})** — {track.artists} "
             f"to **{name}** (track {position}).",
+            color=EMBED_COLOR,
         )
 
     @playlist.command(name="remove", description="Remove a song from a playlist.")

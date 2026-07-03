@@ -1,6 +1,5 @@
 """Playback commands: search, play, and queue control."""
 
-import dataclasses
 import logging
 
 import discord
@@ -10,67 +9,12 @@ from discord.ext import commands
 from ..music import extractor, resolver, ytmusic
 from ..music.player import MusicPlayer
 from ..music.track import Track
+from ..ui import TrackPickerView, results_embed
 from ..utils import EMBED_COLOR, format_duration, respond, trim
 
 log = logging.getLogger(__name__)
 
 SEARCH_RESULTS = 10
-
-
-class SearchSelect(discord.ui.Select["SearchView"]):
-    def __init__(self, tracks: list[Track]) -> None:
-        options = [
-            discord.SelectOption(
-                label=trim(track.title, 100),
-                description=trim(f"{track.artists} • {track.duration_str}", 100),
-                value=str(index),
-            )
-            for index, track in enumerate(tracks)
-        ]
-        super().__init__(placeholder="Pick a song to queue…", options=options)
-        self.tracks = tracks
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if interaction.user.id != view.requester_id:
-            await interaction.response.send_message(
-                "Only the person who ran the search can pick a song.", ephemeral=True
-            )
-            return
-        track = dataclasses.replace(
-            self.tracks[int(self.values[0])], requested_by=interaction.user.id
-        )
-        await interaction.response.defer()
-        vc = await view.cog.ensure_voice(interaction)
-        if vc is None:
-            return
-        player = view.cog.get_player(interaction)
-        await player.enqueue(track)
-        view.stop()
-        embed = discord.Embed(
-            description=f"Queued **[{track.title}]({track.music_url})** — {track.artists}",
-            color=EMBED_COLOR,
-        )
-        try:
-            await interaction.edit_original_response(embed=embed, view=None)
-        except discord.HTTPException:
-            pass
-
-
-class SearchView(discord.ui.View):
-    def __init__(self, cog: "Music", requester_id: int, tracks: list[Track]) -> None:
-        super().__init__(timeout=60)
-        self.cog = cog
-        self.requester_id = requester_id
-        self.message: discord.Message | None = None
-        self.add_item(SearchSelect(tracks))
-
-    async def on_timeout(self) -> None:
-        if self.message is not None:
-            try:
-                await self.message.edit(view=None)
-            except discord.HTTPException:
-                pass
 
 
 class Music(commands.Cog):
@@ -139,11 +83,14 @@ class Music(commands.Cog):
             if player is not None:
                 player.destroy()
 
-    async def _queue_track(self, interaction: discord.Interaction, track: Track) -> None:
-        """Join the caller's channel, queue a track, and confirm."""
+    async def _enqueue_embed(
+        self, interaction: discord.Interaction, track: Track
+    ) -> discord.Embed | None:
+        """Join the caller's channel and queue a track; returns the confirmation
+        embed, or None if the caller isn't in a usable voice channel."""
         track.requested_by = interaction.user.id
         if await self.ensure_voice(interaction) is None:
-            return
+            return None
         player = self.get_player(interaction)
         await player.enqueue(track)
         embed = discord.Embed(
@@ -153,23 +100,21 @@ class Music(commands.Cog):
         queued_behind = len(player.queue)
         if player.current is not None and queued_behind:
             embed.set_footer(text=f"Position in queue: {queued_behind}")
-        await respond(interaction, embed=embed)
+        return embed
+
+    async def _queue_track(self, interaction: discord.Interaction, track: Track) -> None:
+        embed = await self._enqueue_embed(interaction, track)
+        if embed is not None:
+            await respond(interaction, embed=embed)
 
     async def _send_picker(
         self, interaction: discord.Interaction, query: str, tracks: list[Track]
     ) -> None:
-        """Show a numbered result list with a dropdown to pick the song to play."""
-        lines = [
-            f"`{index}.` **{trim(track.title, 60)}** — {trim(track.artists, 60)} ({track.duration_str})"
-            for index, track in enumerate(tracks, 1)
-        ]
-        embed = discord.Embed(
-            title=f"Results for “{trim(query, 80)}”",
-            description="\n".join(lines),
-            color=EMBED_COLOR,
+        """Show the numbered result list; a click queues that track."""
+        view = TrackPickerView(interaction.user.id, tracks, self._enqueue_embed)
+        view.message = await interaction.followup.send(
+            embed=results_embed(query, tracks), view=view
         )
-        view = SearchView(self, interaction.user.id, tracks)
-        view.message = await interaction.followup.send(embed=embed, view=view)
 
     @app_commands.command(
         description="Play a song: pick from the top matches, or paste a URL to play it directly."
@@ -184,29 +129,15 @@ class Music(commands.Cog):
             )
             return
         await interaction.response.defer()
-        if resolver.is_url(query):
-            try:
-                track = await extractor.resolve(query)
-            except extractor.ExtractionError:
-                await respond(interaction, f"Couldn't play **{trim(query, 100)}**.")
-                return
-            await self._queue_track(interaction, track)
-            return
         try:
-            tracks = await ytmusic.search_songs(query, limit=SEARCH_RESULTS)
-        except Exception:
-            log.exception("YouTube Music search failed")
-            tracks = []
-        if not tracks:
-            # Fall back to a plain YouTube search and queue the top hit directly.
-            try:
-                track = await extractor.resolve(f"ytsearch1:{query}")
-            except extractor.ExtractionError:
-                await respond(interaction, f"Couldn't find anything for **{trim(query, 100)}**.")
-                return
-            await self._queue_track(interaction, track)
+            tracks = await resolver.search_or_resolve(query, limit=SEARCH_RESULTS)
+        except extractor.ExtractionError:
+            await respond(interaction, f"Couldn't find anything for **{trim(query, 100)}**.")
             return
-        await self._send_picker(interaction, query, tracks)
+        if len(tracks) == 1:
+            await self._queue_track(interaction, tracks[0])
+        else:
+            await self._send_picker(interaction, query, tracks)
 
     @app_commands.command(description="Search YouTube Music and pick a song to queue.")
     @app_commands.describe(query="What to search for")

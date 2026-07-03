@@ -41,33 +41,47 @@ def test_is_url():
     assert not resolver.is_url("never gonna give you up")
 
 
-def test_resolve_track_url_uses_extractor():
+def test_search_or_resolve_url_uses_extractor():
     track = Track(video_id="abc", title="T", artists="A")
     with patch.object(extractor, "resolve", new=AsyncMock(return_value=track)) as mock:
-        result = asyncio.run(resolver.resolve_track("https://youtu.be/abc"))
-    assert result is track
+        result = asyncio.run(resolver.search_or_resolve("https://youtu.be/abc"))
+    assert result == [track]
     mock.assert_awaited_once_with("https://youtu.be/abc")
 
 
-def test_resolve_track_text_uses_ytmusic():
-    track = Track(video_id="abc", title="T", artists="A")
+def test_search_or_resolve_text_returns_ytmusic_matches():
+    tracks = [
+        Track(video_id="abc", title="T1", artists="A"),
+        Track(video_id="def", title="T2", artists="B"),
+    ]
     with (
-        patch.object(ytmusic, "search_songs", new=AsyncMock(return_value=[track])),
+        patch.object(ytmusic, "search_songs", new=AsyncMock(return_value=tracks)),
         patch.object(extractor, "resolve", new=AsyncMock()) as extract_mock,
     ):
-        result = asyncio.run(resolver.resolve_track("some song"))
-    assert result is track
+        result = asyncio.run(resolver.search_or_resolve("some song", limit=10))
+    assert result == tracks
     extract_mock.assert_not_awaited()
 
 
-def test_resolve_track_falls_back_to_ytdlp():
+def test_search_or_resolve_falls_back_when_ytmusic_errors():
     track = Track(video_id="abc", title="T", artists="A")
     with (
         patch.object(ytmusic, "search_songs", new=AsyncMock(side_effect=RuntimeError)),
         patch.object(extractor, "resolve", new=AsyncMock(return_value=track)) as extract_mock,
     ):
-        result = asyncio.run(resolver.resolve_track("some song"))
-    assert result is track
+        result = asyncio.run(resolver.search_or_resolve("some song"))
+    assert result == [track]
+    extract_mock.assert_awaited_once_with("ytsearch1:some song")
+
+
+def test_search_or_resolve_falls_back_when_ytmusic_is_empty():
+    track = Track(video_id="abc", title="T", artists="A")
+    with (
+        patch.object(ytmusic, "search_songs", new=AsyncMock(return_value=[])),
+        patch.object(extractor, "resolve", new=AsyncMock(return_value=track)) as extract_mock,
+    ):
+        result = asyncio.run(resolver.search_or_resolve("some song"))
+    assert result == [track]
     extract_mock.assert_awaited_once_with("ytsearch1:some song")
 
 

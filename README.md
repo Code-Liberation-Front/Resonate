@@ -9,10 +9,10 @@ channel, and build personal playlists that follow you across servers.
 
 ## Features
 
-- **Search** — `/search` looks up songs on YouTube Music and lets you pick one
-  from a dropdown to queue.
+- **Search** — `/search` looks up songs on YouTube Music; click a numbered
+  button to queue the one you want.
 - **Play** — `/play` shows the top 10 YouTube Music matches for your query and
-  streams the one you pick into your voice channel (URLs skip the picker and
+  streams the one you click into your voice channel (URLs skip the picker and
   play directly), with a full queue system (skip, pause, resume, shuffle,
   remove, volume, now-playing).
 - **Playlists** — `/playlist` commands let every user create up to 25 personal
@@ -35,7 +35,7 @@ channel, and build personal playlists that follow you across servers.
 | `/volume <percent>` | Set volume (1–200%) |
 | `/leave` | Disconnect the bot from voice |
 | `/playlist create <name>` | Create a playlist |
-| `/playlist add <name> <query>` | Add a song to a playlist |
+| `/playlist add <name> <query>` | Add a song to a playlist (pick from the top matches) |
 | `/playlist show <name>` | List the songs in a playlist |
 | `/playlist play <name> [shuffle]` | Queue an entire playlist |
 | `/playlist remove <name> <position>` | Remove a song from a playlist |
