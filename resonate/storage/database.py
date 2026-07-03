@@ -4,6 +4,9 @@ import aiosqlite
 
 from ..music.track import Track
 
+MAX_PLAYLISTS_PER_USER = 25
+MAX_TRACKS_PER_PLAYLIST = 100
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS playlists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

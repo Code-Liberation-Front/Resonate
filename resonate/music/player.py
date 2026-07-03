@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable
 
 import discord
 
+from ..ui import NowPlayingView
 from ..utils import EMBED_COLOR
 from . import extractor
 from .queue import TrackQueue
@@ -98,7 +99,12 @@ class MusicPlayer:
                 self.current = track
                 self._source = source
                 vc.play(source, after=self._playback_finished)
-                await self._send(embed=self.now_playing_embed())
+                view = NowPlayingView(
+                    self.bot.db, track, timeout=max(600, (track.duration or 0) + 120)
+                )
+                view.message = await self._send(
+                    embed=self.now_playing_embed(), view=view
+                )
                 await self._next.wait()
         except asyncio.CancelledError:
             raise
@@ -127,17 +133,24 @@ class MusicPlayer:
                 pass
 
     async def _send(
-        self, content: str | None = None, *, embed: discord.Embed | None = None
-    ) -> None:
+        self,
+        content: str | None = None,
+        *,
+        embed: discord.Embed | None = None,
+        view: discord.ui.View | None = None,
+    ) -> discord.Message | None:
         kwargs: dict = {}
         if content is not None:
             kwargs["content"] = content
         if embed is not None:
             kwargs["embed"] = embed
+        if view is not None:
+            kwargs["view"] = view
         try:
-            await self.text_channel.send(**kwargs)
+            return await self.text_channel.send(**kwargs)
         except discord.HTTPException:
             log.warning("Could not send a message in guild %s", self.guild.id)
+            return None
 
     def now_playing_embed(self) -> discord.Embed:
         track = self.current

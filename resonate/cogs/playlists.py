@@ -10,12 +10,10 @@ from discord.ext import commands
 
 from ..music import extractor, resolver
 from ..music.track import Track
+from ..storage.database import MAX_PLAYLISTS_PER_USER, MAX_TRACKS_PER_PLAYLIST
 from ..ui import TrackPickerView, results_embed
 from ..utils import EMBED_COLOR, format_duration, respond, trim
 from .music import SEARCH_RESULTS
-
-MAX_PLAYLISTS_PER_USER = 25
-MAX_TRACKS_PER_PLAYLIST = 100
 
 PlaylistName = app_commands.Range[str, 1, 60]
 

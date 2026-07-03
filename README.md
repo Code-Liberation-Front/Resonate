@@ -17,7 +17,8 @@ channel, and build personal playlists that follow you across servers.
   remove, volume, now-playing).
 - **Playlists** — `/playlist` commands let every user create up to 25 personal
   playlists (100 tracks each), stored in SQLite, playable in any server the
-  bot is in.
+  bot is in. Every now-playing message has an **➕ Add to playlist** button to
+  save the current song in one click.
 
 ## Commands
 
@@ -26,7 +27,7 @@ channel, and build personal playlists that follow you across servers.
 | `/play <query>` | Show the top 10 matches and pick one to play (URLs play directly) |
 | `/search <query>` | Search YouTube Music and pick a result to queue |
 | `/queue` | Show what's playing and what's up next |
-| `/nowplaying` | Show the current song |
+| `/nowplaying` | Show the current song, with a quick add-to-playlist button |
 | `/skip` | Skip the current song |
 | `/pause` / `/resume` | Pause or resume playback |
 | `/stop` | Stop playback and clear the queue |

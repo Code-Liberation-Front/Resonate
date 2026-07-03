@@ -9,7 +9,7 @@ from discord.ext import commands
 from ..music import extractor, resolver, ytmusic
 from ..music.player import MusicPlayer
 from ..music.track import Track
-from ..ui import TrackPickerView, results_embed
+from ..ui import NowPlayingView, TrackPickerView, results_embed
 from ..utils import EMBED_COLOR, format_duration, respond, trim
 
 log = logging.getLogger(__name__)
@@ -194,7 +194,12 @@ class Music(commands.Cog):
         if player is None or player.current is None:
             await respond(interaction, "Nothing is playing right now.")
             return
-        await respond(interaction, embed=player.now_playing_embed())
+        view = NowPlayingView(self.bot.db, player.current)
+        await respond(interaction, embed=player.now_playing_embed(), view=view)
+        try:
+            view.message = await interaction.original_response()
+        except discord.HTTPException:
+            pass
 
     @app_commands.command(description="Skip the current song.")
     @app_commands.guild_only()
