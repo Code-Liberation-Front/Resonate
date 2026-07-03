@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Resonate logo" width="160">
+</p>
+
 # Resonate 🎵
 
 A YouTube Music bot for Discord. Search for songs, stream them into a voice
@@ -48,8 +52,10 @@ The bot leaves the voice channel automatically after 5 minutes of inactivity
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
    and create a **New Application**, then open the **Bot** tab.
 2. Copy the **bot token** — you'll put it in `.env`.
-3. No privileged intents are required.
-4. Invite the bot with the following URL (replace `CLIENT_ID` with your
+3. Optionally upload [`assets/avatar.png`](assets/avatar.png) as the bot's
+   icon (Bot tab → Icon) so it uses the Resonate logo.
+4. No privileged intents are required.
+5. Invite the bot with the following URL (replace `CLIENT_ID` with your
    application's client ID):
 
    ```
